@@ -64,11 +64,13 @@ Toutes les routes sont préfixées par `/api`. Les erreurs sont toujours en JSON
 | POST | `/api/adherents` | bibliothécaire | enregistrer un adhérent |
 | POST | `/api/livres` | bibliothécaire | enregistrer un livre |
 | POST | `/api/emprunts` | bibliothécaire | enregistrer un emprunt |
-| POST | `/api/emprunts/{id}/retour` | bibliothécaire | enregistrer un retour (à venir) |
+| POST | `/api/emprunts/{id}/retour` | bibliothécaire | enregistrer un retour (date du jour) |
 | GET | `/api/livres/{isbn}` | tout utilisateur authentifié | consulter un livre et ses exemplaires disponibles |
-| GET | `/api/adherents/{carte}/emprunts` | bibliothécaire ou adhérent concerné | lister les emprunts (à venir) |
+| GET | `/api/adherents/{carte}/emprunts` | bibliothécaire ou adhérent concerné | lister les emprunts, filtre `?statut=`, 20 par page (`?page=2`) |
 
 ### Exemples (`curl.exe`)
+
+Ces commandes sont écrites pour l'invite de commandes `cmd.exe`, avec le serveur lancé. Dans PowerShell, l'échappement des guillemets du corps JSON diffère : utiliser `cmd.exe`.
 
 Enregistrer un adhérent (201, la réponse contient `api_token`) :
 
@@ -79,7 +81,7 @@ curl.exe -X POST http://127.0.0.1:8000/api/adherents -H "Authorization: Bearer A
 Enregistrer un livre (201) :
 
 ```
-curl.exe -X POST http://127.0.0.1:8000/api/livres -H "Authorization: Bearer ABCDEFs" -H "Content-Type: application/json" -d "{\"isbn\":\"9780000000001\",\"titre\":\"Les Soleils des indépendances\",\"exemplaires\":3}"
+curl.exe -X POST http://127.0.0.1:8000/api/livres -H "Authorization: Bearer ABCDEFs" -H "Content-Type: application/json" -d "{\"isbn\":\"9780000000001\",\"titre\":\"Les Soleils des independances\",\"exemplaires\":3}"
 ```
 
 Enregistrer un emprunt (201) :
@@ -93,6 +95,26 @@ Consulter un livre (200, avec `exemplaires_disponibles`) :
 ```
 curl.exe http://127.0.0.1:8000/api/livres/9780000000001 -H "Authorization: Bearer ABCDEFs"
 ```
+
+Enregistrer le retour d'un emprunt (200 ; remplacer `1` par l'`id` renvoyé à la création de l'emprunt) :
+
+```
+curl.exe -X POST http://127.0.0.1:8000/api/emprunts/1/retour -H "Authorization: Bearer ABCDEFs"
+```
+
+Lister les emprunts d'un adhérent, du plus récent au plus ancien (200, 20 par page) :
+
+```
+curl.exe http://127.0.0.1:8000/api/adherents/00000001/emprunts -H "Authorization: Bearer ABCDEFs"
+```
+
+Même liste filtrée par statut (une valeur inconnue donne 422) :
+
+```
+curl.exe "http://127.0.0.1:8000/api/adherents/00000001/emprunts?statut=en_cours" -H "Authorization: Bearer ABCDEFs"
+```
+
+Un adhérent utilise son propre `api_token` à la place de `ABCDEFs` et ne peut consulter que sa carte.
 
 Valeurs de `statut` d'un emprunt : `en_cours`, `rendu`, `en_retard`.
 
@@ -110,15 +132,15 @@ Le statut d'un emprunt n'est pas stocké : il se calcule à partir des dates.
 
 | Règle | Contenu | Code si violée | Couverture |
 |---|---|---|---|
-| R1 | carte exactement 8 chiffres et unique ; nom de 2 à 100 caractères ; email facultatif valide ; isbn exactement 13 chiffres et unique ; titre de 150 caractères au plus ; exemplaires entier de 1 à 20 | 422 | vérifié par `curl.exe` |
-| R2 | authentification obligatoire ; actions d'enregistrement réservées au bibliothécaire ; un adhérent ne voit que ses emprunts | 401 ou 403 | vérifié par `curl.exe` |
-| R3 | échéance = date du jour d'emprunt + 14 jours, date du Bénin (fuseau `Africa/Porto-Novo`) | sans objet | vérifié par `curl.exe` |
-| R4 | au plus 3 emprunts non rendus à la fois | 409 | vérifié par `curl.exe` |
-| R5 | un emprunt non rendu est en retard quand la date du jour est strictement postérieure à l'échéance ; un adhérent en retard ne peut plus emprunter | 409 | vérifié par `curl.exe` |
-| R6 | un livre dont tous les exemplaires sont prêtés ne peut pas être emprunté (à venir) | 409 | à venir |
-| R7 | un emprunt rendu ne peut plus être rendu ni modifié (à venir) | 409 | à venir |
-| R8 | liste du plus récent au plus ancien ; statut de filtre inconnu refusé (à venir) | 422 | à venir |
-| R9 | erreur de saisie ou action interdite : message clair et code adapté | voir tableau des codes | vérifié par `curl.exe` |
+| R1 | carte exactement 8 chiffres et unique ; nom de 2 à 100 caractères ; email facultatif valide ; isbn exactement 13 chiffres et unique ; titre de 150 caractères au plus ; exemplaires entier de 1 à 20 | 422 | `test_r1_*` |
+| R2 | authentification obligatoire ; actions d'enregistrement réservées au bibliothécaire ; un adhérent ne voit que ses emprunts | 401 ou 403 | `test_r2_*` |
+| R3 | échéance = date du jour d'emprunt + 14 jours, date du Bénin (fuseau `Africa/Porto-Novo`) | sans objet | `test_r3_*` |
+| R4 | au plus 3 emprunts non rendus à la fois | 409 | `test_r4_*` |
+| R5 | un emprunt non rendu est en retard quand la date du jour est strictement postérieure à l'échéance ; un adhérent en retard ne peut plus emprunter | 409 | `test_r5_*` (date simulée) |
+| R6 | un livre dont tous les exemplaires sont prêtés ne peut pas être emprunté | 409 | `test_r6_*` |
+| R7 | un emprunt rendu ne peut plus être rendu ni modifié (aucune route de modification n'existe) ; le retour enregistre la date du jour | 409 | `test_r7_*` |
+| R8 | liste du plus récent au plus ancien ; statut de filtre inconnu refusé avec les valeurs acceptées | 422 | `test_r8_*` |
+| R9 | erreur de saisie ou action interdite : message clair et code adapté | voir tableau des codes | vérifié dans chaque test |
 
 ## Hypothèses et choix de conception
 
@@ -131,14 +153,21 @@ Le statut d'un emprunt n'est pas stocké : il se calcule à partir des dates.
 - **Même livre** : un adhérent peut emprunter plusieurs fois le même livre, l'énoncé ne l'interdit pas.
 - **Statuts** : valeurs sans accents `en_cours`, `rendu`, `en_retard` (correspondance avec l'énoncé : « en cours », « rendu », « en retard »).
 
+- **Accès aux emprunts** : un adhérent qui demande les emprunts d'une autre carte reçoit 403, même si cette carte n'existe pas (pour ne pas révéler quelles cartes existent). Le bibliothécaire reçoit 404 pour une carte inconnue.
+- **Pagination** : la liste des emprunts renvoie 20 éléments par page, avec les champs `data`, `links` et `meta` de Laravel.
+
 ## Tests
 
-Les tests automatisés ne sont pas encore écrits (voir l'état d'avancement). Les règles R1 à R5 ont été vérifiées à la main avec `curl.exe`.
+```
+php artisan test
+```
+
+Les tests (`tests/Feature/PretsTest.php`) utilisent une base SQLite en mémoire : ils ne touchent pas la base de travail. Ils couvrent les règles R1 à R8, dont le retard (R5), testé avec une date simulée (`travelTo`) : le jour de l'échéance l'emprunt n'est pas en retard, le lendemain il l'est et l'emprunt est refusé.
 
 ## État d'avancement
 
-**Fonctionne** : authentification et rôles (R2), enregistrement d'un adhérent, d'un livre et d'un emprunt (R1, R3, R4, R5), consultation d'un livre avec ses exemplaires disponibles.
+**Fonctionne** : toutes les fonctions attendues et les règles R1 à R9 : enregistrement d'un adhérent, d'un livre, d'un emprunt et d'un retour, consultation d'un livre avec ses exemplaires disponibles, liste des emprunts d'un adhérent avec filtre par statut, authentification des deux profils.
 
-**Manque (état de ce premier jet), et pourquoi** : blocage d'un livre sans exemplaire disponible (R6), retour d'un emprunt (R7), liste des emprunts d'un adhérent avec filtre et tri (R8), tests automatisés. Ces éléments sont planifiés dans l'ordre des règles et seront mis à jour ici. Raison : temps limité de l'épreuve.
+**Manque, et pourquoi** : comptage par statut, prolongation unique de 7 jours et écran web simple. Ces bonus ont été écartés volontairement pour garder le temps de l'épreuve au socle, aux tests et au README. Pas de bogue connu non corrigé.
 
-**Bonus réalisés** : aucun pour l'instant.
+**Bonus réalisés** : tests automatisés des règles (avec simulation de date) et pagination de 20 éléments au plus.
