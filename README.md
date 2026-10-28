@@ -154,6 +154,8 @@ Le statut d'un emprunt n'est pas stocké : il se calcule à partir des dates.
 - **Statuts** : valeurs sans accents `en_cours`, `rendu`, `en_retard` (correspondance avec l'énoncé : « en cours », « rendu », « en retard »).
 
 - **Accès aux emprunts** : un adhérent qui demande les emprunts d'une autre carte reçoit 403, même si cette carte n'existe pas (pour ne pas révéler quelles cartes existent). Le bibliothécaire reçoit 404 pour une carte inconnue.
+- **Langue des messages** : les messages de validation (422) sont ceux de Laravel, en anglais. Les messages des règles de gestion (401, 403, 404, 409) sont en français.
+- **Mode débogage** : `APP_DEBUG=false` dans `.env.example`, pour ne jamais exposer de trace dans les réponses d'erreur.
 - **Pagination** : la liste des emprunts renvoie 20 éléments par page, avec les champs `data`, `links` et `meta` de Laravel.
 
 ## Tests
