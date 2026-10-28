@@ -45,6 +45,13 @@ class EmpruntController extends Controller
             ], 409);
         }
 
+        // R6 : un livre dont tous les exemplaires sont prêtés ne peut pas être emprunté.
+        if ($livre->exemplairesDisponibles() <= 0) {
+            return response()->json([
+                'message' => 'Aucun exemplaire disponible pour ce livre.',
+            ], 409);
+        }
+
         $emprunt = Emprunt::create([
             'adherent_id' => $adherent->id,
             'livre_id' => $livre->id,
