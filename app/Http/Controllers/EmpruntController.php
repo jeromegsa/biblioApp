@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 
 class EmpruntController extends Controller
 {
+    private const MAX_EMPRUNTS_NON_RENDUS = 3;
+
     /**
      * Enregistre un emprunt (bibliothécaire).
      * R3 : échéance = date du jour (fuseau du Bénin) + 14 jours.
@@ -27,6 +29,13 @@ class EmpruntController extends Controller
 
         if ($livre === null) {
             return response()->json(['message' => 'Livre introuvable.'], 404);
+        }
+
+        // R4 : au plus 3 emprunts non rendus à la fois (les emprunts en retard comptent).
+        if ($adherent->emprunts()->whereNull('date_retour')->count() >= self::MAX_EMPRUNTS_NON_RENDUS) {
+            return response()->json([
+                'message' => 'Limite de '.self::MAX_EMPRUNTS_NON_RENDUS.' emprunts non rendus atteinte.',
+            ], 409);
         }
 
         $emprunt = Emprunt::create([
