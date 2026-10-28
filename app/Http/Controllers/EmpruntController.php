@@ -61,4 +61,25 @@ class EmpruntController extends Controller
 
         return (new EmpruntResource($emprunt))->response()->setStatusCode(201);
     }
+
+    /**
+     * Enregistre le retour d'un emprunt (bibliothécaire).
+     * R7 : un emprunt rendu ne peut plus être rendu ; le retour enregistre la date du jour.
+     */
+    public function retour(int $id): JsonResponse
+    {
+        $emprunt = Emprunt::find($id);
+
+        if ($emprunt === null) {
+            return response()->json(['message' => 'Emprunt introuvable.'], 404);
+        }
+
+        if ($emprunt->date_retour !== null) {
+            return response()->json(['message' => 'Cet emprunt est déjà rendu.'], 409);
+        }
+
+        $emprunt->update(['date_retour' => today()]);
+
+        return (new EmpruntResource($emprunt))->response();
+    }
 }

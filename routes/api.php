@@ -14,5 +14,6 @@ Route::middleware('auth.jeton')->group(function () {
         Route::post('/adherents', [AdherentController::class, 'store']);
         Route::post('/livres', [LivreController::class, 'store']);
         Route::post('/emprunts', [EmpruntController::class, 'store']);
+        Route::post('/emprunts/{id}/retour', [EmpruntController::class, 'retour'])->whereNumber('id');
     });
 });
