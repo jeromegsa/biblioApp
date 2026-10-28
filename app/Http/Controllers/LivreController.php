@@ -17,4 +17,24 @@ class LivreController extends Controller
 
         return response()->json($livre, 201);
     }
+
+    /**
+     * Consulte un livre par son ISBN (tout utilisateur authentifié),
+     * avec le nombre d'exemplaires disponibles (R6).
+     */
+    public function show(string $isbn): JsonResponse
+    {
+        $livre = Livre::where('isbn', $isbn)->first();
+
+        if ($livre === null) {
+            return response()->json(['message' => 'Livre introuvable.'], 404);
+        }
+
+        return response()->json([
+            'isbn' => $livre->isbn,
+            'titre' => $livre->titre,
+            'exemplaires' => $livre->exemplaires,
+            'exemplaires_disponibles' => $livre->exemplairesDisponibles(),
+        ]);
+    }
 }
