@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdherentController;
+use App\Http\Controllers\EmpruntController;
 use App\Http\Controllers\LivreController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,5 +13,6 @@ Route::middleware('auth.jeton')->group(function () {
     Route::middleware('bibliothecaire')->group(function () {
         Route::post('/adherents', [AdherentController::class, 'store']);
         Route::post('/livres', [LivreController::class, 'store']);
+        Route::post('/emprunts', [EmpruntController::class, 'store']);
     });
 });
