@@ -31,6 +31,13 @@ class EmpruntController extends Controller
             return response()->json(['message' => 'Livre introuvable.'], 404);
         }
 
+        // R5 : un adhérent avec un emprunt en retard ne peut plus emprunter.
+        if ($adherent->aUnEmpruntEnRetard()) {
+            return response()->json([
+                'message' => 'Emprunt impossible : l\'adhérent a un emprunt en retard.',
+            ], 409);
+        }
+
         // R4 : au plus 3 emprunts non rendus à la fois (les emprunts en retard comptent).
         if ($adherent->emprunts()->whereNull('date_retour')->count() >= self::MAX_EMPRUNTS_NON_RENDUS) {
             return response()->json([
